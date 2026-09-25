@@ -1,0 +1,17 @@
+services:
+  postgres:
+    image: postgres:15         # versión de PostgreSQL
+    container_name: postgres_db
+    restart: always            # para reiniciar automáticamente si el contenedor falla
+    environment:
+      POSTGRES_USER: admin     # usuario de la base de datos
+      POSTGRES_PASSWORD: admin123 # contraseña del usuario
+      POSTGRES_DB: mi_base     # base de datos inicial
+    ports:
+      - "5432:5432"            # expone PostgreSQL en el puerto local 5432. El de la izquierda es como nos ven fuera. El de la derecha es el que usa docker internamente.
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # volumen para persistencia de datos
+
+volumes:
+  postgres_data:
+    driver: local
