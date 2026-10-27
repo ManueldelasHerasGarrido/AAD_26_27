@@ -11,6 +11,8 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 @Slf4j
 @Component
@@ -60,7 +62,9 @@ public class StoreIngestionScheduler {
                     processCsv(file);
                 } else if (lowerName.endsWith(".jpg")) {
                     copySignature(file);
-                } else if (lowerName.endsWith(".enc") || lowerName.endsWith(".zip")) {
+                } else if (lowerName.endsWith(".zip")) {
+                    processZip(file);
+                } else if (lowerName.endsWith(".enc")) {
                     log.info("Fichero detectado: {}", fileName);
                 }
             }
@@ -82,7 +86,7 @@ public class StoreIngestionScheduler {
 
     private BigDecimal sumSales(BufferedReader reader) throws IOException {
         BigDecimal total = BigDecimal.ZERO;
-        reader.readLine(); // primera línea: cabecera, la saltamos
+        reader.readLine(); // primera línea: cabecera, la descartamos
 
         String line;
         while ((line = reader.readLine()) != null) {
@@ -95,21 +99,54 @@ public class StoreIngestionScheduler {
         return total;
     }
 
-
     private void copySignature(Path file) throws IOException {
         String fileName = file.getFileName().toString();
-        Path target = SIGNATURES_DIR.resolve(fileName);
 
-        try (BufferedInputStream in = new BufferedInputStream(Files.newInputStream(file));
-             BufferedOutputStream out = new BufferedOutputStream(Files.newOutputStream(target))) {
+        try (BufferedInputStream in = new BufferedInputStream(Files.newInputStream(file))) {
+            copyToFile(in, SIGNATURES_DIR.resolve(fileName));
+        }
+
+        log.info("Firma copiada: {}", fileName);
+        Files.delete(file);
+    }
+
+    private void copyToFile(InputStream in, Path target) throws IOException {
+        try (BufferedOutputStream out = new BufferedOutputStream(Files.newOutputStream(target))) {
             byte[] buffer = new byte[4096];
             int bytesRead;
             while ((bytesRead = in.read(buffer)) != -1) {
                 out.write(buffer, 0, bytesRead);
             }
         }
+    }
 
-        log.info("Firma copiada: {}", fileName);
-        Files.delete(file);
+    private void processZip(Path zipFile) throws IOException {
+        String zipName = zipFile.getFileName().toString();
+
+        try (ZipInputStream zis = new ZipInputStream(Files.newInputStream(zipFile), StandardCharsets.UTF_8)) {
+            ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+                if (entry.isDirectory()) {
+                    continue;
+                }
+                // Nos quedamos solo con el nombre, por seguridad (sin rutas internas del zip)
+                String entryName = Path.of(entry.getName()).getFileName().toString();
+                String lowerEntry = entryName.toLowerCase();
+
+                if (lowerEntry.endsWith(".csv")) {
+                    // No cerramos este reader: cerraría también el zip
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(zis, StandardCharsets.UTF_8));
+                    BigDecimal total = sumSales(reader);
+                    log.info("ZIP {} -> {} procesado. Total de ventas: {}", zipName, entryName, total);
+                } else if (lowerEntry.endsWith(".jpg")) {
+                    copyToFile(zis, SIGNATURES_DIR.resolve(entryName));
+                    log.info("ZIP {} -> firma copiada: {}", zipName, entryName);
+                }
+            }
+        }
+
+        Files.move(zipFile, PROCESSED_DIR.resolve(zipName), StandardCopyOption.REPLACE_EXISTING);
     }
 }
+
+
