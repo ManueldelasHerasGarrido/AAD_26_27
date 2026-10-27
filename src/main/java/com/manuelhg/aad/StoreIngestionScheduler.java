@@ -4,9 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
@@ -22,6 +20,7 @@ public class StoreIngestionScheduler {
     private static final Path OUTPUT_DIR = Path.of("workspace/store_data/output");
     private static final Path ERROR_DIR = OUTPUT_DIR.resolve("error");
     private static final Path PROCESSED_DIR = OUTPUT_DIR.resolve("processed");
+    private static final Path SIGNATURES_DIR = PROCESSED_DIR.resolve("signatures");
 
     @Scheduled(fixedRate = 5000)
     public void processStoreBatches() {
@@ -34,7 +33,7 @@ public class StoreIngestionScheduler {
     }
 
     private void createDirectories() throws IOException {
-        for (Path dir : new Path[]{INPUT_DIR, OUTPUT_DIR, ERROR_DIR, PROCESSED_DIR}) {
+        for (Path dir : new Path[]{INPUT_DIR, OUTPUT_DIR, ERROR_DIR, PROCESSED_DIR, SIGNATURES_DIR}) {
             if (!Files.exists(dir)) {
                 Files.createDirectories(dir);
                 log.info("Carpeta creada: {}", dir);
@@ -59,7 +58,9 @@ public class StoreIngestionScheduler {
                 String lowerName = fileName.toLowerCase();
                 if (lowerName.endsWith(".csv")) {
                     processCsv(file);
-                } else if (lowerName.endsWith(".enc") || lowerName.endsWith(".jpg") || lowerName.endsWith(".zip")) {
+                } else if (lowerName.endsWith(".jpg")) {
+                    copySignature(file);
+                } else if (lowerName.endsWith(".enc") || lowerName.endsWith(".zip")) {
                     log.info("Fichero detectado: {}", fileName);
                 }
             }
@@ -81,8 +82,9 @@ public class StoreIngestionScheduler {
 
     private BigDecimal sumSales(BufferedReader reader) throws IOException {
         BigDecimal total = BigDecimal.ZERO;
-        String line = reader.readLine(); // primera línea: cabecera, la saltamos
+        reader.readLine(); // primera línea: cabecera, la saltamos
 
+        String line;
         while ((line = reader.readLine()) != null) {
             if (line.isBlank()) {
                 continue;
@@ -92,6 +94,22 @@ public class StoreIngestionScheduler {
         }
         return total;
     }
+
+
+    private void copySignature(Path file) throws IOException {
+        String fileName = file.getFileName().toString();
+        Path target = SIGNATURES_DIR.resolve(fileName);
+
+        try (BufferedInputStream in = new BufferedInputStream(Files.newInputStream(file));
+             BufferedOutputStream out = new BufferedOutputStream(Files.newOutputStream(target))) {
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = in.read(buffer)) != -1) {
+                out.write(buffer, 0, bytesRead);
+            }
+        }
+
+        log.info("Firma copiada: {}", fileName);
+        Files.delete(file);
+    }
 }
-
-
