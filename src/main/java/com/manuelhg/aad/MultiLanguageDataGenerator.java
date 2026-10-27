@@ -2,6 +2,7 @@ package com.manuelhg.aad;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NullMarked;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
@@ -16,7 +17,9 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import.org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Slf4j
 @Component
 @RequiredArgsConstructor
