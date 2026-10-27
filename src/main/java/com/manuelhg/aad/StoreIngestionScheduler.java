@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.security.GeneralSecurityException;
+import java.time.LocalDateTime;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -28,6 +29,9 @@ public class StoreIngestionScheduler {
     private static final Path SIGNATURES_DIR = PROCESSED_DIR.resolve("signatures");
 
     private final CryptoService cryptoService;
+    private final CloudBucketService cloudBucketService;
+
+    private int batchCounter = 0;
 
     @Scheduled(fixedRate = 5000)
     public void processStoreBatches() {
@@ -86,6 +90,7 @@ public class StoreIngestionScheduler {
         }
 
         log.info("Lote {} procesado. Total de ventas: {}", fileName, total);
+        publishSummary(fileName, total);
         Files.move(file, PROCESSED_DIR.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
     }
 
@@ -106,6 +111,7 @@ public class StoreIngestionScheduler {
         }
 
         log.info("Lote cifrado {} procesado. Total de ventas: {}", fileName, total);
+        publishSummary(fileName, total);
         Files.move(file, PROCESSED_DIR.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
     }
 
@@ -163,6 +169,7 @@ public class StoreIngestionScheduler {
                     BufferedReader reader = new BufferedReader(new InputStreamReader(zis, StandardCharsets.UTF_8));
                     BigDecimal total = sumSales(reader);
                     log.info("ZIP {} -> {} procesado. Total de ventas: {}", zipName, entryName, total);
+                    publishSummary(zipName + "/" + entryName, total);
                 } else if (lowerEntry.endsWith(".jpg")) {
                     copyToFile(zis, SIGNATURES_DIR.resolve(entryName));
                     log.info("ZIP {} -> firma copiada: {}", zipName, entryName);
@@ -171,6 +178,20 @@ public class StoreIngestionScheduler {
         }
 
         Files.move(zipFile, PROCESSED_DIR.resolve(zipName), StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    private void publishSummary(String sourceFile, BigDecimal total) throws IOException {
+        batchCounter++;
+        String json = """
+                {
+                  "batchId": %d,
+                  "sourceFile": "%s",
+                  "totalSales": %s,
+                  "processedAt": "%s"
+                }
+                """.formatted(batchCounter, sourceFile, total.toPlainString(), LocalDateTime.now());
+
+        cloudBucketService.upload("summary_batch_" + batchCounter + ".json", json);
     }
 }
 
