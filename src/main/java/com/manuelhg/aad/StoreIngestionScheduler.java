@@ -1,5 +1,6 @@
 package com.manuelhg.aad;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -11,11 +12,13 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.security.GeneralSecurityException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class StoreIngestionScheduler {
 
     private static final Path INPUT_DIR = Path.of("workspace/store_data/input");
@@ -23,6 +26,8 @@ public class StoreIngestionScheduler {
     private static final Path ERROR_DIR = OUTPUT_DIR.resolve("error");
     private static final Path PROCESSED_DIR = OUTPUT_DIR.resolve("processed");
     private static final Path SIGNATURES_DIR = PROCESSED_DIR.resolve("signatures");
+
+    private final CryptoService cryptoService;
 
     @Scheduled(fixedRate = 5000)
     public void processStoreBatches() {
@@ -65,7 +70,7 @@ public class StoreIngestionScheduler {
                 } else if (lowerName.endsWith(".zip")) {
                     processZip(file);
                 } else if (lowerName.endsWith(".enc")) {
-                    log.info("Fichero detectado: {}", fileName);
+                    processEnc(file);
                 }
             }
         }
@@ -81,6 +86,26 @@ public class StoreIngestionScheduler {
         }
 
         log.info("Lote {} procesado. Total de ventas: {}", fileName, total);
+        Files.move(file, PROCESSED_DIR.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    private void processEnc(Path file) throws IOException {
+        String fileName = file.getFileName().toString();
+        BigDecimal total;
+
+        try {
+            byte[] decrypted = cryptoService.decrypt(Files.readAllBytes(file));
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(new ByteArrayInputStream(decrypted), StandardCharsets.UTF_8))) {
+                total = sumSales(reader);
+            }
+        } catch (GeneralSecurityException e) {
+            log.error("[ALERT EMAIL SENT -> soporte@aadtex.com] CRITICAL: Empty/Corrupt batch file: {}", fileName);
+            Files.move(file, ERROR_DIR.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
+            return;
+        }
+
+        log.info("Lote cifrado {} procesado. Total de ventas: {}", fileName, total);
         Files.move(file, PROCESSED_DIR.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
     }
 
