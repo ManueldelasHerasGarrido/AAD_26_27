@@ -4,7 +4,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,6 +21,7 @@ public class StoreIngestionScheduler {
     private static final Path INPUT_DIR = Path.of("workspace/store_data/input");
     private static final Path OUTPUT_DIR = Path.of("workspace/store_data/output");
     private static final Path ERROR_DIR = OUTPUT_DIR.resolve("error");
+    private static final Path PROCESSED_DIR = OUTPUT_DIR.resolve("processed");
 
     @Scheduled(fixedRate = 5000)
     public void processStoreBatches() {
@@ -29,7 +34,7 @@ public class StoreIngestionScheduler {
     }
 
     private void createDirectories() throws IOException {
-        for (Path dir : new Path[]{INPUT_DIR, OUTPUT_DIR, ERROR_DIR}) {
+        for (Path dir : new Path[]{INPUT_DIR, OUTPUT_DIR, ERROR_DIR, PROCESSED_DIR}) {
             if (!Files.exists(dir)) {
                 Files.createDirectories(dir);
                 log.info("Carpeta creada: {}", dir);
@@ -52,12 +57,41 @@ public class StoreIngestionScheduler {
                 }
 
                 String lowerName = fileName.toLowerCase();
-                if (lowerName.endsWith(".csv") || lowerName.endsWith(".enc")
-                        || lowerName.endsWith(".jpg") || lowerName.endsWith(".zip")) {
+                if (lowerName.endsWith(".csv")) {
+                    processCsv(file);
+                } else if (lowerName.endsWith(".enc") || lowerName.endsWith(".jpg") || lowerName.endsWith(".zip")) {
                     log.info("Fichero detectado: {}", fileName);
                 }
             }
         }
     }
+
+    private void processCsv(Path file) throws IOException {
+        String fileName = file.getFileName().toString();
+        BigDecimal total;
+
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(Files.newInputStream(file), StandardCharsets.UTF_8))) {
+            total = sumSales(reader);
+        }
+
+        log.info("Lote {} procesado. Total de ventas: {}", fileName, total);
+        Files.move(file, PROCESSED_DIR.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    private BigDecimal sumSales(BufferedReader reader) throws IOException {
+        BigDecimal total = BigDecimal.ZERO;
+        String line = reader.readLine(); // primera línea: cabecera, la saltamos
+
+        while ((line = reader.readLine()) != null) {
+            if (line.isBlank()) {
+                continue;
+            }
+            String[] fields = line.split(",");
+            total = total.add(new BigDecimal(fields[2].trim()));
+        }
+        return total;
+    }
 }
+
 
