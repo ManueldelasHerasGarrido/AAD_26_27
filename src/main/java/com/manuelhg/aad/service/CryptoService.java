@@ -1,4 +1,4 @@
-package com.manuelhg.aad;
+package com.manuelhg.aad.service;
 
 import org.springframework.stereotype.Service;
 

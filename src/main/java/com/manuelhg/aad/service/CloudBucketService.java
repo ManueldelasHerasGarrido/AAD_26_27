@@ -1,4 +1,4 @@
-package com.manuelhg.aad;
+package com.manuelhg.aad.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
