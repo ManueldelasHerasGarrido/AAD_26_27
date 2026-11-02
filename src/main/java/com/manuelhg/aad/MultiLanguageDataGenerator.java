@@ -18,6 +18,10 @@ import java.nio.file.StandardCopyOption;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+
+//Con esta clase, fabricamos datos de prueba. Es la clase que deja los ficheros en input cada vez que arrancamos.
+
+
 @NullMarked
 @Slf4j
 @Component

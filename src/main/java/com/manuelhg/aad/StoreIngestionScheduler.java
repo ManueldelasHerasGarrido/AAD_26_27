@@ -17,11 +17,13 @@ import java.time.LocalDateTime;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-@Slf4j
-@Component
-@RequiredArgsConstructor
+@Slf4j  //Con @Slf4j creamos logs
+@Component  //Con @Component, Spring crea un bean al arrancar.
+@RequiredArgsConstructor  //Con esto, Lombok genera un constructor con todos los campos que sena "final"
+//Spring los usa para entregar CryptoService y CloudBucketService, inyección de dependencias.
 public class StoreIngestionScheduler {
 
+    //Rutas constantes que no cambian, empledas en varios mét0dos.
     private static final Path INPUT_DIR = Path.of("workspace/store_data/input");
     private static final Path OUTPUT_DIR = Path.of("workspace/store_data/output");
     private static final Path ERROR_DIR = OUTPUT_DIR.resolve("error");
@@ -33,6 +35,8 @@ public class StoreIngestionScheduler {
 
     private int batchCounter = 0;
 
+    //ESte mét0d0 solo hace dos cosas, preparar las carpetas y escanear las entradas.
+    //Por defecto, Spring ejecuta las tareas programadas en un solo hilo. Si una tarda +5 segundos, la siguiente espera.
     @Scheduled(fixedRate = 5000)
     public void processStoreBatches() {
         try {
@@ -43,11 +47,13 @@ public class StoreIngestionScheduler {
         }
     }
 
+    //El array new Path[] con 5 carpetas es recorrido por el for. Crea las carpetas que falten
     private void createDirectories() throws IOException {
         for (Path dir : new Path[]{INPUT_DIR, OUTPUT_DIR, ERROR_DIR, PROCESSED_DIR, SIGNATURES_DIR}) {
             if (!Files.exists(dir)) {
                 Files.createDirectories(dir);
                 log.info("Carpeta creada: {}", dir);
+                //Solo se escribe el log cuando se crea una carpeta, por eso la consola no se llena cada 5 seg.
             }
         }
     }
@@ -80,8 +86,12 @@ public class StoreIngestionScheduler {
         }
     }
 
+    //Con este mét0d0, leemos CSV del disco.
+    //Llamado por scanImput() cuando el fichero acaba en .csv
+    //Recibe la ruta dle fichero y lee CSV, calcula el total, lo anota en log y JSON, y mueve fichero a /processed
     private void processCsv(Path file) throws IOException {
         String fileName = file.getFileName().toString();
+        //Declaramos BigDeciaml fuera del try porque necesitamos que esxista fuera delbloque para el log y el resumen.
         BigDecimal total;
 
         try (BufferedReader reader = new BufferedReader(
@@ -91,18 +101,23 @@ public class StoreIngestionScheduler {
 
         log.info("Lote {} procesado. Total de ventas: {}", fileName, total);
         publishSummary(fileName, total);
+        //Movemos el archivo cuando acabe el try. Mientras no se puede, y se mueve para no volver a leerlo en input.
         Files.move(file, PROCESSED_DIR.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
     }
 
+    //Este mét0do lee un nfichero cifrado
+    //Es llamado por scanInput cuando un fichero acaba en .enc
+    //Funciona como processCsv(), pero debe descifrar contenido antes de leer, y puede fallar si un fichero no
+    //se puede descifrar.
     private void processEnc(Path file) throws IOException {
         String fileName = file.getFileName().toString();
         BigDecimal total;
 
-        try {
+        try {                                     //leet t0d0 el fichero cifrado de golpe y devuelve un byte[]. En RAM
             byte[] decrypted = cryptoService.decrypt(Files.readAllBytes(file));
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(new ByteArrayInputStream(decrypted), StandardCharsets.UTF_8))) {
-                total = sumSales(reader);
+                total = sumSales(reader);    //Esto ^ convierte el array en flujo de lectura. Conecta el resto de cadena
             }
         } catch (GeneralSecurityException e) {
             log.error("[ALERT EMAIL SENT -> soporte@aadtex.com] CRITICAL: Empty/Corrupt batch file: {}", fileName);
@@ -115,6 +130,8 @@ public class StoreIngestionScheduler {
         Files.move(file, PROCESSED_DIR.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
     }
 
+    //mét0d0 usado en processCSV, processEnc y processZip
+    //Usamos BufferedReade en lugar de fichero porque este mét0do no sabe de donde vienen los dato. Solo lee x lineas.
     private BigDecimal sumSales(BufferedReader reader) throws IOException {
         BigDecimal total = BigDecimal.ZERO;
         reader.readLine(); // primera línea: cabecera, la descartamos
@@ -130,17 +147,23 @@ public class StoreIngestionScheduler {
         return total;
     }
 
+    //Este mét0d0 copia una firma desde input.
+    //Es usado por scanInput cuando el fichero acaba en .jpg
+    //Abre la imagen, la delega a copyToFile() y al final, la borra de input.
     private void copySignature(Path file) throws IOException {
         String fileName = file.getFileName().toString();
-
+        //abre fichero y entrega bytes.
         try (BufferedInputStream in = new BufferedInputStream(Files.newInputStream(file))) {
             copyToFile(in, SIGNATURES_DIR.resolve(fileName));
+            //El destino al que va la copia procesada.
         }
 
         log.info("Firma copiada: {}", fileName);
         Files.delete(file);
     }
 
+    //Este es el mét0d0 que realmente copia. Recibe de donde leer (con el in = new del mét0do anterior) y a
+    //qué fichero escribir
     private void copyToFile(InputStream in, Path target) throws IOException {
         try (BufferedOutputStream out = new BufferedOutputStream(Files.newOutputStream(target))) {
             byte[] buffer = new byte[4096];
@@ -151,6 +174,8 @@ public class StoreIngestionScheduler {
         }
     }
 
+    //Este mét0d0 abre un zip sin extraerlo a disco.
+    //Es llamado `por scanInput cuando el fichero acaba en .zip
     private void processZip(Path zipFile) throws IOException {
         String zipName = zipFile.getFileName().toString();
 
@@ -180,7 +205,10 @@ public class StoreIngestionScheduler {
         Files.move(zipFile, PROCESSED_DIR.resolve(zipName), StandardCopyOption.REPLACE_EXISTING);
     }
 
+    //Este mét0do es llamado por processCsv, processEnc y processZip, si un lote se ha leído bien.
+    //Recibe de donde viene el lote (sourceFile) y cuanto sumó (total), y hace un JSON, lo entrega a CloudBucketService
     private void publishSummary(String sourceFile, BigDecimal total) throws IOException {
+        //Esto le da el número al lote
         batchCounter++;
         String json = """
                 {
