@@ -1,6 +1,8 @@
 package com.manuelhg.aad;
 
+import com.manuelhg.aad.common.SaleRecord;
 import com.manuelhg.aad.repository.BinaryFileCopier;
+import com.manuelhg.aad.repository.CsvReader;
 import com.manuelhg.aad.service.CloudBucketService;
 import com.manuelhg.aad.service.CryptoService;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,7 @@ public class StoreIngestionScheduler {
     private final CryptoService cryptoService;
     private final CloudBucketService cloudBucketService;
     private final BinaryFileCopier binaryFileCopier;
+    private final CsvReader csvReader;
 
     private int batchCounter = 0;
 
@@ -129,19 +132,10 @@ public class StoreIngestionScheduler {
         Files.move(file, PROCESSED_DIR.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
     }
 
-    //mét0d0 usado en processCSV, processEnc y processZip
-    //Usamos BufferedReade en lugar de fichero porque este mét0do no sabe de donde vienen los dato. Solo lee x lineas.
     private BigDecimal sumSales(BufferedReader reader) throws IOException {
         BigDecimal total = BigDecimal.ZERO;
-        reader.readLine(); // primera línea: cabecera, la descartamos
-
-        String line;
-        while ((line = reader.readLine()) != null) {
-            if (line.isBlank()) {
-                continue;
-            }
-            String[] fields = line.split(",");
-            total = total.add(new BigDecimal(fields[2].trim()));
+        for (SaleRecord record : csvReader.readFrom(reader)) {
+            total = total.add(record.salesAmount());
         }
         return total;
     }
