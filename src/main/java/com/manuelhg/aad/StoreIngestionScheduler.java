@@ -1,5 +1,6 @@
 package com.manuelhg.aad;
 
+import com.manuelhg.aad.repository.BinaryFileCopier;
 import com.manuelhg.aad.service.CloudBucketService;
 import com.manuelhg.aad.service.CryptoService;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class StoreIngestionScheduler {
 
     private final CryptoService cryptoService;
     private final CloudBucketService cloudBucketService;
+    private final BinaryFileCopier binaryFileCopier;
 
     private int batchCounter = 0;
 
@@ -151,24 +153,12 @@ public class StoreIngestionScheduler {
         String fileName = file.getFileName().toString();
         //abre fichero y entrega bytes.
         try (BufferedInputStream in = new BufferedInputStream(Files.newInputStream(file))) {
-            copyToFile(in, SIGNATURES_DIR.resolve(fileName));
+            binaryFileCopier.copy(in, SIGNATURES_DIR.resolve(fileName));
             //El destino al que va la copia procesada.
         }
 
         log.info("Firma copiada: {}", fileName);
         Files.delete(file);
-    }
-
-    //Este es el mét0d0 que realmente copia. Recibe de donde leer (con el in = new del mét0do anterior) y a
-    //qué fichero escribir
-    private void copyToFile(InputStream in, Path target) throws IOException {
-        try (BufferedOutputStream out = new BufferedOutputStream(Files.newOutputStream(target))) {
-            byte[] buffer = new byte[4096];
-            int bytesRead;
-            while ((bytesRead = in.read(buffer)) != -1) {
-                out.write(buffer, 0, bytesRead);
-            }
-        }
     }
 
     //Este mét0d0 abre un zip sin extraerlo a disco.
@@ -193,7 +183,7 @@ public class StoreIngestionScheduler {
                     log.info("ZIP {} -> {} procesado. Total de ventas: {}", zipName, entryName, total);
                     publishSummary(zipName + "/" + entryName, total);
                 } else if (lowerEntry.endsWith(".jpg")) {
-                    copyToFile(zis, SIGNATURES_DIR.resolve(entryName));
+                    binaryFileCopier.copy(zis, SIGNATURES_DIR.resolve(entryName));
                     log.info("ZIP {} -> firma copiada: {}", zipName, entryName);
                 }
             }
