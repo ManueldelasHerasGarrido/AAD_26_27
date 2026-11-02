@@ -19,6 +19,8 @@ import java.nio.file.StandardCopyOption;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import static com.manuelhg.aad.common.AppPaths.*;
+
 
 //Con esta clase, fabricamos datos de prueba. Es la clase que deja los ficheros en input cada vez que arrancamos.
 
@@ -28,11 +30,6 @@ import java.util.zip.ZipOutputStream;
 @Component
 @RequiredArgsConstructor
 public class MultiLanguageDataGenerator implements CommandLineRunner {
-
-    private static final Path BASE_DIR = Path.of("workspace/store_data");
-    private static final Path INPUT_DIR = BASE_DIR.resolve("input");
-    private static final Path STAGING_DIR = BASE_DIR.resolve("staging");
-    private static final Path KEYS_DIR = BASE_DIR.resolve("keys");
 
     private static final String HEADER = "StoreID,StoreName,SalesAmount,Category,TransactionDate\n";
 

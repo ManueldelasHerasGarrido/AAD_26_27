@@ -19,18 +19,13 @@ import java.time.LocalDateTime;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import static com.manuelhg.aad.common.AppPaths.*;
+
 @Slf4j  //Con @Slf4j creamos logs
 @Component  //Con @Component, Spring crea un bean al arrancar.
 @RequiredArgsConstructor  //Con esto, Lombok genera un constructor con todos los campos que sena "final"
 //Spring los usa para entregar CryptoService y CloudBucketService, inyección de dependencias.
 public class StoreIngestionScheduler {
-
-    //Rutas constantes que no cambian, empledas en varios mét0dos.
-    private static final Path INPUT_DIR = Path.of("workspace/store_data/input");
-    private static final Path OUTPUT_DIR = Path.of("workspace/store_data/output");
-    private static final Path ERROR_DIR = OUTPUT_DIR.resolve("error");
-    private static final Path PROCESSED_DIR = OUTPUT_DIR.resolve("processed");
-    private static final Path SIGNATURES_DIR = PROCESSED_DIR.resolve("signatures");
 
     private final CryptoService cryptoService;
     private final CloudBucketService cloudBucketService;
