@@ -5,7 +5,8 @@ Actividad del módulo **Acceso a Datos (AAD)**, RA1: Manejo de Ficheros.
 ## Repositorio
 
 - Repositorio de GitHub: https://github.com/ManueldelasHerasGarrido/AAD_26_27
-- Rama de la actividad: https://github.com/ManueldelasHerasGarrido/AAD_26_27/tree/actividad-1
+- Rama de la entrega (con la reorganización en
+  paquetes): https://github.com/ManueldelasHerasGarrido/AAD_26_27/tree/actividad-1-refactor
 
 ## Descripción
 
@@ -25,23 +26,18 @@ Por cada lote correcto se genera un resumen `summary_batch_N.json` que se public
 ## Requisitos
 
 - Java 21
-- Maven (o el wrapper `mvnw` incluido en el proyecto)
+- Maven (incluido en IntelliJ IDEA)
 
 ## Cómo ejecutarla
 
-Desde la raíz del proyecto:
-
-```bash
-mvn spring-boot:run
-```
-
-O desde el IDE, ejecutando la clase `AadApplication`.
+- **Desde el IDE:** ejecutar la clase `AadApplication`.
+- **Con Maven:** `mvn spring-boot:run` (o, en IntelliJ, panel Maven > Plugins > spring-boot > `spring-boot:run`).
 
 Al arrancar, `MultiLanguageDataGenerator` crea automáticamente los ficheros de prueba en `workspace/store_data/input/`,
-y el scheduler los procesa en los segundos siguientes. El resultado se puede ver en el log de la consola y en las
-carpetas de `workspace/store_data/output/`.
+y el scheduler los procesa en los segundos siguientes. El resultado se ve en el log de la consola y en las carpetas de
+`workspace/store_data/output/`.
 
-## Estructura de carpetas
+## Estructura de carpetas de datos
 
 Todas las rutas son relativas a la raíz del proyecto:
 
@@ -56,12 +52,33 @@ workspace/store_data/
     └── bucket/aadtex-daily-reports/2026/09/   <- resúmenes JSON
 ```
 
-## Clases principales
+## Estructura del código
 
-- `AadApplication`: clase principal; activa el planificador con `@EnableScheduling`.
-- `StoreIngestionScheduler`: tarea programada (`@Scheduled`, cada 5 s) que escanea `input/` y procesa cada lote.
-- `CryptoService`: cifrado y descifrado AES-128 (`AES/ECB/PKCS5Padding`).
-- `CloudBucketService`: publica los resúmenes JSON en el bucket local.
-- `MultiLanguageDataGenerator`: `CommandLineRunner` que genera los datos de prueba al arrancar.
+El proyecto está organizado en paquetes bajo `com.manuelhg.aad`, con una clase por tarea para poder reutilizarlas:
+
+```text
+com.manuelhg.aad
+├── AadApplication              <- clase principal (@EnableScheduling)
+├── StoreIngestionScheduler     <- tarea programada cada 5 s: escanea input/ y reparte cada fichero
+├── common
+│   ├── AppPaths                <- rutas de todas las carpetas, en un único sitio
+│   └── SaleRecord              <- record con una línea de venta
+├── repository
+│   ├── CrudRepository<T, ID>   <- interfaz genérica (crear, leer, actualizar, borrar)
+│   ├── CsvReader               <- implementa CrudRepository<SaleRecord, Path>
+│   ├── TxtReader               <- implementa CrudRepository<String, Path>
+│   └── BinaryFileCopier        <- copia binaria con buffer de 4 KB
+└── service
+    ├── CryptoService           <- cifrado y descifrado AES-128
+    ├── CloudBucketService      <- publica los JSON en el bucket local
+    ├── DirectoryService        <- crea las carpetas necesarias
+    ├── SalesTotalService       <- suma las ventas de un CSV
+    ├── CsvBatchService         <- procesa lotes .csv
+    ├── EncBatchService         <- procesa lotes .enc (descifra en RAM)
+    ├── ZipBatchService         <- procesa lotes .zip con ZipInputStream
+    ├── SignatureService        <- copia las firmas .jpg
+    ├── SummaryService          <- genera el resumen JSON de cada lote
+    └── MultiLanguageDataGenerator <- CommandLineRunner que genera los datos de prueba al arrancar
+```
 
 
