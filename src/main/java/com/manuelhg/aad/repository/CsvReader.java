@@ -14,6 +14,10 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+//Implementa CrudRepository<SaleRecord, Path>: trabaja con ficheros CSV y objetos SaleRecord.
+//readFrom() acepta cualquier BufferedReader (fichero, bytes en memoria o entrada de un zip), por eso se reutiliza.
+//Es la clase que sabe de comas y columnas, así el resto del programa no necesita saberlo.
+
 @Component
 public class CsvReader implements CrudRepository<SaleRecord, Path> {
 

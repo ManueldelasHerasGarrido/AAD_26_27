@@ -12,6 +12,9 @@ import java.nio.file.Path;
 
 import static com.manuelhg.aad.common.AppPaths.SIGNATURES_DIR;
 
+//Copia una firma .jpg de /input a /signatures y borra el original.
+//Abre la imagen y deja la copia en manos de BinaryFileCopier (buffer de 4 KB).
+
 @Slf4j
 @Service
 @RequiredArgsConstructor

@@ -22,7 +22,11 @@ import static com.manuelhg.aad.common.AppPaths.*;
 
 
 //Con esta clase, fabricamos datos de prueba. Es la clase que deja los ficheros en input cada vez que arrancamos.
+//CommandLineRunner: Spring ejecuta su run() una vez, al terminar de arrancar la aplicación.
+//Crea los ficheros de prueba. Cada fichero se escribe entero en /staging y luego se mueve a /input,
+//para que el scheduler nunca lo encuentre a medio escribir.
 
+//IMPORTANTE: SI NO QUEREMOS USARLA, COMENTAREMOS EL @Component
 
 @NullMarked
 @Slf4j

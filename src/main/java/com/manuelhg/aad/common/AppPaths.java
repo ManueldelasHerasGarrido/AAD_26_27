@@ -3,6 +3,9 @@ package com.manuelhg.aad.common;
 import java.nio.file.Path;
 
 //Constante y accesible desde cualquier clase, sin crear objetos.
+//Esta clase reúne todas las rutas del proyecto en un único sitio. Las demás clases las usan con import static.
+//Es final y su constructor es private porque es una clase de utilidades: no tiene sentido hacer new AppPaths().
+
 public final class AppPaths {
 
     public static final Path BASE_DIR = Path.of("workspace/store_data");

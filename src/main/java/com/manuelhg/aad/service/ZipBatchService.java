@@ -19,6 +19,10 @@ import java.util.zip.ZipInputStream;
 import static com.manuelhg.aad.common.AppPaths.PROCESSED_DIR;
 import static com.manuelhg.aad.common.AppPaths.SIGNATURES_DIR;
 
+//Procesa un lote .zip con ZipInputStream, sin extraerlo a disco. Recorre las entradas con getNextEntry().
+//El CSV de dentro se suma y la firma se copia. Solo se usa el nombre de cada entrada (evita Zip Slip).
+//El reader del CSV no se cierra porque cerraría el zip entero y no se podrían leer las demás entradas.
+
 @Slf4j
 @Service
 @RequiredArgsConstructor

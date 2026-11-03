@@ -9,6 +9,10 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 
+//Implementa CrudRepository<String, Path>: trabaja con ficheros de texto plano, donde cada elemento es una línea.
+//Demuestra que la misma interfaz genérica sirve para otro tipo de dato y otro tipo de fichero.
+//Todavía no se usa en el flujo del programa, existe para poder reutilizarla.
+
 @Component
 public class TxtReader implements CrudRepository<String, Path> {
 

@@ -7,6 +7,9 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+//Genera el JSON resumen de cada lote y se lo entrega a CloudBucketService.
+//batchCounter da el número al lote (summary_batch_1.json, _2...) y se reinicia en cada arranque.
+
 @Service
 @RequiredArgsConstructor
 public class SummaryService {

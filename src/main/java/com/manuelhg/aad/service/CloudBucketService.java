@@ -9,6 +9,9 @@ import java.nio.file.Files;
 
 import static com.manuelhg.aad.common.AppPaths.BUCKET_DIR;
 
+//Simula la subida a un bucket de la nube: guarda los resúmenes JSON en una carpeta local.
+//Está separada para poder cambiarla por una subida real sin tocar el resto del programa.
+
 @Slf4j
 @Service
 public class CloudBucketService {

@@ -43,7 +43,7 @@ public class StoreIngestionScheduler {
         }
     }
 
-    //Este méto0do recorre la carpeta input y reparte cada fichero según su extensión.
+    //Este método recorre la carpeta input y reparte cada fichero según su extensión.
     //Es llamado por processStoreBatches() en cada vuelta.
     //DirectoryStream va dentro de un try() para que se cierre solo al terminar.
     private void scanInput() throws IOException {

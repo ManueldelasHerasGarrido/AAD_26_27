@@ -18,6 +18,9 @@ import java.security.GeneralSecurityException;
 import static com.manuelhg.aad.common.AppPaths.ERROR_DIR;
 import static com.manuelhg.aad.common.AppPaths.PROCESSED_DIR;
 
+//Procesa un lote .enc: descifra el fichero en RAM y lo lee como un CSV con ByteArrayInputStream.
+//Si el descifrado falla, emite la alerta y mueve el fichero a /error.
+
 @Slf4j
 @Service
 @RequiredArgsConstructor

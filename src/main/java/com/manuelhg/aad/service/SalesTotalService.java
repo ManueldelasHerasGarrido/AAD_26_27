@@ -9,6 +9,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.math.BigDecimal;
 
+//Suma el importe de todas las ventas de un CSV. Recibe un BufferedReader sin saber de dónde vienen los datos.
+//Por eso la usan CsvBatchService, EncBatchService y ZipBatchService.
+//Usa CsvReader para convertir las líneas en SaleRecord y BigDecimal para sumar sin errores de decimales.
+
 @Service
 @RequiredArgsConstructor
 public class SalesTotalService {

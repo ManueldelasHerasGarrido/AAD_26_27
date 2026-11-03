@@ -9,6 +9,9 @@ import java.nio.file.Path;
 
 import static com.manuelhg.aad.common.AppPaths.*;
 
+//Crea las carpetas input, output, error, processed y signatures si faltan.
+//Es llamada por el scheduler en cada vuelta, por si alguien borra una carpeta con la aplicación en marcha.
+
 @Slf4j
 @Service
 public class DirectoryService {

@@ -10,7 +10,9 @@ import java.security.GeneralSecurityException;
 
 //Esta clase se encarga de recibir y pasar bytes. Llegan datos, cifra con AES-128, y envía de vuelta.
 //La separamos de Scheduler para que este no tenga que lidiar con nada de criptografía.
-
+//Copia datos binarios de un InputStream a un fichero usando un buffer de 4 KB (byte[4096]).
+//Solo hay 4 KB en memoria a la vez, así se evita OutOfMemoryError con ficheros grandes.
+//No cierra el InputStream que recibe: quien lo abre es quien lo cierra (importante con el zip).
 
 @Service
 //@Service es igual que @Component, pero indica que contiene lógica de negocio. Spring crea
