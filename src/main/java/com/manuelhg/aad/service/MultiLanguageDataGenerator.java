@@ -1,6 +1,5 @@
-package com.manuelhg.aad;
+package com.manuelhg.aad.service;
 
-import com.manuelhg.aad.service.CryptoService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NullMarked;
